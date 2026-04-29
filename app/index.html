@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Itecológica | Regularização e Gestão Ambiental</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow">Itecológica</span>
+          <h1>Regularize seu empreendimento com apoio técnico ambiental.</h1>
+          <p>
+            Receba um contato da Itecológica para entender sua demanda, avaliar a urgência
+            e indicar o melhor caminho para licenciamento, regularização, outorga ou diagnóstico ambiental.
+          </p>
+          <p class="hero-support">
+            Atendimento inicial técnico e comercial, com foco em solução prática e segurança para sua operação.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#lead-form" class="primary-link">Quero falar com a equipe</a>
+          </div>
+
+          <section class="content-block">
+            <h2>Quando procurar a Itecológica</h2>
+            <ul class="hero-list">
+              <li>Seu empreendimento está com licença vencida, pendente ou irregular.</li>
+              <li>Você recebeu exigência de órgão ambiental e precisa agir com rapidez.</li>
+              <li>Precisa entender riscos, documentos e próximos passos para regularização.</li>
+            </ul>
+          </section>
+
+          <section class="content-block">
+            <h2>Como podemos ajudar</h2>
+            <div class="service-grid">
+              <article class="service-card">Licenciamento ambiental</article>
+              <article class="service-card">Regularização ambiental</article>
+              <article class="service-card">Outorga e uso de recursos hídricos</article>
+              <article class="service-card">Diagnóstico técnico inicial</article>
+              <article class="service-card">Gestão ambiental recorrente</article>
+            </div>
+          </section>
+
+          <section class="trust-box">
+            <h2>Atendimento com foco técnico e clareza comercial</h2>
+            <p>
+              Nosso primeiro contato serve para entender sua situação, identificar a urgência
+              e direcionar a solução mais adequada para o seu caso.
+            </p>
+          </section>
+        </div>
+
+        <form id="lead-form" class="card">
+          <div class="card-head">
+            <h2>Solicite contato</h2>
+            <p>Preencha os dados abaixo para receber retorno da equipe.</p>
+          </div>
+
+          <div class="grid">
+            <label>
+              <span>Nome *</span>
+              <input name="name" type="text" required />
+            </label>
+
+            <label>
+              <span>Empresa *</span>
+              <input name="company" type="text" required />
+            </label>
+
+            <label>
+              <span>WhatsApp *</span>
+              <input name="phone" type="tel" required />
+            </label>
+
+            <label>
+              <span>Email</span>
+              <input name="email" type="email" />
+            </label>
+
+            <label>
+              <span>CNPJ</span>
+              <input name="cnpj" type="text" />
+            </label>
+
+            <label>
+              <span>CNAE / Segmento</span>
+              <input name="cnae" type="text" />
+            </label>
+
+            <label>
+              <span>Cidade *</span>
+              <input name="city" type="text" required />
+            </label>
+
+            <label>
+              <span>Estado *</span>
+              <input name="state" type="text" maxlength="2" required />
+            </label>
+
+            <label class="full">
+              <span>Necessidade principal *</span>
+              <select name="need" required>
+                <option value="">Selecione</option>
+                <option value="licenciamento">Licenciamento</option>
+                <option value="regularizacao">Regularizacao</option>
+                <option value="outorga">Outorga</option>
+                <option value="diagnostico">Diagnostico inicial</option>
+                <option value="gestao-recorrente">Gestao ambiental recorrente</option>
+              </select>
+            </label>
+
+            <label class="full">
+              <span>Urgencia *</span>
+              <select name="urgency" required>
+                <option value="">Selecione</option>
+                <option value="baixa">Baixa</option>
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+                <option value="critica">Critica</option>
+              </select>
+            </label>
+
+            <label class="full">
+              <span>Observacoes</span>
+              <textarea name="notes" rows="4"></textarea>
+            </label>
+          </div>
+
+          <input name="website" type="text" class="bot-field" tabindex="-1" autocomplete="off" />
+          <input name="form_loaded_at" type="hidden" />
+
+          <div id="captcha-shell" class="captcha-shell hidden">
+            <p class="captcha-copy">Validacao anti-bot ativa.</p>
+            <div id="captcha-widget"></div>
+          </div>
+
+          <label class="consent">
+            <input name="consent" type="checkbox" required />
+            <span>Autorizo o contato da Itecológica para retorno comercial e análise inicial da demanda.</span>
+          </label>
+
+          <p class="privacy-note">
+            Seus dados serão usados apenas para retorno comercial e atendimento da solicitação.
+          </p>
+
+          <button type="submit" id="submit-button">Enviar solicitação</button>
+          <p id="feedback" class="feedback" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-shell">
+        <strong>Itecológica | Soluções em regularização e gestão ambiental</strong>
+        <span>Atendimento inicial técnico e comercial com foco em clareza, segurança e próximos passos.</span>
+      </div>
+    </footer>
+
+    <script src="./config.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
