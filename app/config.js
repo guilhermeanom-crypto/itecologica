@@ -1,6 +1,6 @@
 window.HABILIS_CAPTACAO_CONFIG = {
-  apiBaseUrl: "",
-  publicLeadEndpoint: "create-public-lead",
+  apiBaseUrl: "https://cixgnglubgczawnfyspw.supabase.co/functions/v1",
+  publicLeadEndpoint: "bright-responder",
   turnstileSiteKey: "",
-  simulateWhenOffline: true,
+  simulateWhenOffline: false,
 };
