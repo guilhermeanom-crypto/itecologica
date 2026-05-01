@@ -1,0 +1,4 @@
+window.ITECOLOGICA_CRM_CONFIG = {
+  supabaseUrl: "https://cixgnglubgczawnfyspw.supabase.co",
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpeGduZ2x1YmdjemF3bmZ5c3B3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Njg3MzgsImV4cCI6MjA5MzA0NDczOH0.WJgcoCKiDcn21Qke125ghVFFW67jRyyJDPSrVj8hn3s",
+};
