@@ -28,8 +28,65 @@ type LeadInput = {
   consent?: boolean;
 };
 
+type TurnstileVerification = {
+  ok: boolean;
+  code: string;
+  detail?: string;
+};
+
+type TurnstileApiResponse = {
+  success?: boolean;
+  hostname?: string;
+  action?: string;
+  cdata?: string;
+  "error-codes"?: string[];
+};
+
+type FirstContactAutomationResult = {
+  attempted: boolean;
+  status: "skipped" | "pending" | "sent" | "failed" | "invalid_phone";
+  channel: "whatsapp";
+  phone?: string | null;
+  error?: string | null;
+  providerMessageId?: string | null;
+  templateName?: string | null;
+};
+
+type WhatsAppApiSuccess = {
+  contacts?: Array<{ wa_id?: string }>;
+  messages?: Array<{ id?: string; message_status?: string }>;
+};
+
+type WhatsAppApiFailure = {
+  error?: {
+    message?: string;
+    type?: string;
+    code?: number;
+    error_subcode?: number;
+  };
+};
+
 function normalizeText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function digitsOnly(value: string) {
+  return value.replace(/\D+/g, "");
+}
+
+function normalizeBrazilPhoneToWhatsApp(phone: string) {
+  const digits = digitsOnly(phone);
+  if (!digits) return "";
+
+  if (digits.startsWith("55") && (digits.length === 12 || digits.length === 13)) {
+    return digits;
+  }
+
+  if (digits.length === 10 || digits.length === 11) {
+    return `55${digits}`;
+  }
+
+  return "";
 }
 
 function validateLead(input: LeadInput) {
@@ -75,25 +132,307 @@ function originAllowed(origin: string, allowedOrigins: string[]) {
   return allowedOrigins.includes(origin);
 }
 
-async function verifyTurnstile(token: string, ip: string | null) {
-  const secret = Deno.env.get("TURNSTILE_SECRET_KEY");
-  if (!secret) return true;
+function describeTurnstileFailure(code: string) {
+  switch (code) {
+    case "missing-input-secret":
+    case "invalid-input-secret":
+      return "Turnstile configurado com chave secreta invalida no servidor.";
+    case "missing-input-response":
+      return "Token anti-bot ausente. Refaça a validacao e tente novamente.";
+    case "invalid-input-response":
+      return "Token anti-bot invalido. Refaça a validacao e tente novamente.";
+    case "timeout-or-duplicate":
+      return "A validacao anti-bot expirou ou ja foi usada. Refaça a verificacao e envie novamente.";
+    case "bad-request":
+      return "Falha ao validar o anti-bot por formato de requisicao invalido.";
+    case "internal-error":
+      return "O servico anti-bot falhou temporariamente. Tente novamente em instantes.";
+    default:
+      return "Falha na validacao anti-bot.";
+  }
+}
 
-  if (!token) return false;
+function firstContactAutomationEnabled() {
+  return (Deno.env.get("WHATSAPP_FIRST_CONTACT_ENABLED") || "").trim().toLowerCase() === "true";
+}
+
+function getWhatsAppApiVersion() {
+  return (Deno.env.get("WHATSAPP_API_VERSION") || "v23.0").trim();
+}
+
+function getWhatsAppTemplateName() {
+  return normalizeText(Deno.env.get("WHATSAPP_TEMPLATE_NAME"));
+}
+
+function getWhatsAppTemplateLanguage() {
+  return normalizeText(Deno.env.get("WHATSAPP_TEMPLATE_LANGUAGE")) || "pt_BR";
+}
+
+async function updateLeadFirstContactState(
+  supabase: ReturnType<typeof createClient>,
+  leadId: string,
+  data: Record<string, unknown>,
+) {
+  const { error } = await supabase
+    .from("crm_leads_public")
+    .update(data)
+    .eq("id", leadId);
+
+  if (error) {
+    console.error("update lead first contact state error", { leadId, error });
+  }
+}
+
+async function logLeadContactAttempt(
+  supabase: ReturnType<typeof createClient>,
+  payload: Record<string, unknown>,
+) {
+  const { error } = await supabase
+    .from("crm_lead_contact_attempts")
+    .insert([payload]);
+
+  if (error) {
+    console.error("insert lead contact attempt error", { payload, error });
+  }
+}
+
+async function sendWhatsAppTemplateMessage(phone: string, lead: Record<string, unknown>) {
+  const accessToken = normalizeText(Deno.env.get("WHATSAPP_ACCESS_TOKEN"));
+  const phoneNumberId = normalizeText(Deno.env.get("WHATSAPP_PHONE_NUMBER_ID"));
+  const templateName = getWhatsAppTemplateName();
+  const languageCode = getWhatsAppTemplateLanguage();
+  const apiVersion = getWhatsAppApiVersion();
+
+  if (!accessToken || !phoneNumberId || !templateName) {
+    throw new Error("Automacao WhatsApp sem configuracao completa de token, phone number id ou template.");
+  }
+
+  const components = [
+    {
+      type: "body",
+      parameters: [
+        { type: "text", text: String(lead.name || "cliente") },
+        { type: "text", text: String(lead.company || "empresa") },
+        { type: "text", text: String(lead.need || "demanda") },
+      ],
+    },
+  ];
+
+  const response = await fetch(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "template",
+      template: {
+        name: templateName,
+        language: { code: languageCode },
+        components,
+      },
+    }),
+  });
+
+  const data = (await response.json()) as WhatsAppApiSuccess & WhatsAppApiFailure;
+  if (!response.ok) {
+    const errorMessage = data.error?.message || "Falha ao enviar template inicial do WhatsApp.";
+    throw new Error(errorMessage);
+  }
+
+  return {
+    providerMessageId: data.messages?.[0]?.id || null,
+    status: data.messages?.[0]?.message_status || "accepted",
+    raw: data,
+    templateName,
+  };
+}
+
+async function triggerFirstContactAutomation(
+  supabase: ReturnType<typeof createClient>,
+  lead: Record<string, unknown>,
+) : Promise<FirstContactAutomationResult> {
+  const leadId = String(lead.id || "");
+  const phone = normalizeBrazilPhoneToWhatsApp(String(lead.phone || ""));
+
+  if (!firstContactAutomationEnabled()) {
+    return {
+      attempted: false,
+      status: "pending",
+      channel: "whatsapp",
+      phone: phone || null,
+      error: null,
+      templateName: getWhatsAppTemplateName() || null,
+    };
+  }
+
+  if (!phone) {
+    const error = "Telefone invalido para automacao no WhatsApp. Salve o numero com DDD.";
+    await updateLeadFirstContactState(supabase, leadId, {
+      whatsapp_phone_e164: null,
+      first_contact_channel: "whatsapp",
+      first_contact_status: "invalid_phone",
+      first_contact_attempted_at: new Date().toISOString(),
+      first_contact_error: error,
+    });
+
+    await logLeadContactAttempt(supabase, {
+      lead_id: leadId,
+      channel: "whatsapp",
+      direction: "outbound",
+      stage: "first_contact",
+      status: "invalid_phone",
+      provider: "meta_whatsapp_cloud",
+      recipient: String(lead.phone || ""),
+      error_message: error,
+      metadata: { source: "create-public-lead" },
+    });
+
+    return {
+      attempted: false,
+      status: "invalid_phone",
+      channel: "whatsapp",
+      phone: null,
+      error,
+      templateName: getWhatsAppTemplateName() || null,
+    };
+  }
+
+  const attemptedAt = new Date().toISOString();
+
+  try {
+    const result = await sendWhatsAppTemplateMessage(phone, lead);
+
+    await updateLeadFirstContactState(supabase, leadId, {
+      whatsapp_phone_e164: phone,
+      first_contact_channel: "whatsapp",
+      first_contact_status: "sent",
+      first_contact_attempted_at: attemptedAt,
+      first_contact_sent_at: attemptedAt,
+      first_contact_error: null,
+    });
+
+    await logLeadContactAttempt(supabase, {
+      lead_id: leadId,
+      channel: "whatsapp",
+      direction: "outbound",
+      stage: "first_contact",
+      status: "sent",
+      provider: "meta_whatsapp_cloud",
+      recipient: phone,
+      template_name: result.templateName,
+      provider_message_id: result.providerMessageId,
+      metadata: result.raw,
+      sent_at: attemptedAt,
+    });
+
+    return {
+      attempted: true,
+      status: "sent",
+      channel: "whatsapp",
+      phone,
+      error: null,
+      providerMessageId: result.providerMessageId,
+      templateName: result.templateName,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao disparar WhatsApp.";
+
+    await updateLeadFirstContactState(supabase, leadId, {
+      whatsapp_phone_e164: phone,
+      first_contact_channel: "whatsapp",
+      first_contact_status: "failed",
+      first_contact_attempted_at: attemptedAt,
+      first_contact_error: message,
+    });
+
+    await logLeadContactAttempt(supabase, {
+      lead_id: leadId,
+      channel: "whatsapp",
+      direction: "outbound",
+      stage: "first_contact",
+      status: "failed",
+      provider: "meta_whatsapp_cloud",
+      recipient: phone,
+      template_name: getWhatsAppTemplateName() || null,
+      error_message: message,
+      metadata: { source: "create-public-lead" },
+    });
+
+    return {
+      attempted: true,
+      status: "failed",
+      channel: "whatsapp",
+      phone,
+      error: message,
+      templateName: getWhatsAppTemplateName() || null,
+    };
+  }
+}
+
+async function verifyTurnstile(token: string): Promise<TurnstileVerification> {
+  const secret = Deno.env.get("TURNSTILE_SECRET_KEY");
+  if (!secret) {
+    return { ok: true, code: "turnstile_not_configured" };
+  }
+
+  if (!token) {
+    return {
+      ok: false,
+      code: "turnstile_missing_token",
+      detail: describeTurnstileFailure("missing-input-response"),
+    };
+  }
 
   const body = new URLSearchParams();
   body.set("secret", secret);
   body.set("response", token);
-  if (ip) body.set("remoteip", ip);
 
-  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-    method: "POST",
-    body,
-  });
+  try {
+    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body,
+    });
 
-  if (!response.ok) return false;
-  const data = await response.json();
-  return Boolean(data.success);
+    if (!response.ok) {
+      return {
+        ok: false,
+        code: "turnstile_http_error",
+        detail: "Servico anti-bot indisponivel no momento.",
+      };
+    }
+
+    const data = (await response.json()) as TurnstileApiResponse;
+    if (data.success) {
+      return { ok: true, code: "turnstile_ok" };
+    }
+
+    const errorCode = Array.isArray(data["error-codes"]) && data["error-codes"].length > 0
+      ? String(data["error-codes"][0])
+      : "unknown";
+
+    console.error("turnstile verification failed", {
+      errorCodes: data["error-codes"] || [],
+      hostname: data.hostname || null,
+      action: data.action || null,
+      cdata: data.cdata || null,
+    });
+
+    return {
+      ok: false,
+      code: `turnstile_${errorCode}`,
+      detail: describeTurnstileFailure(errorCode),
+    };
+  } catch (error) {
+    console.error("turnstile request error", error);
+    return {
+      ok: false,
+      code: "turnstile_request_error",
+      detail: "Nao foi possivel validar o anti-bot no servidor.",
+    };
+  }
 }
 
 serve(async (req) => {
@@ -123,10 +462,12 @@ serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const serviceRoleKey =
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ||
+      Deno.env.get("ITESUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !serviceRoleKey) {
-      throw new Error("SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY nao configurados.");
+      throw new Error("SUPABASE_URL ou chave service role nao configurados.");
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
@@ -162,10 +503,12 @@ serve(async (req) => {
       });
     }
 
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
-    const captchaOk = await verifyTurnstile(normalizeText(body.captcha_token), clientIp);
-    if (!captchaOk) {
-      return new Response(JSON.stringify({ error: "Falha na validacao anti-bot." }), {
+    const captchaResult = await verifyTurnstile(normalizeText(body.captcha_token));
+    if (!captchaResult.ok) {
+      return new Response(JSON.stringify({
+        error: captchaResult.detail || "Falha na validacao anti-bot.",
+        code: captchaResult.code,
+      }), {
         status: 400,
         headers: buildCors(origin),
       });
@@ -207,9 +550,15 @@ serve(async (req) => {
       });
     }
 
+    const automation = await triggerFirstContactAutomation(supabase, {
+      ...payload,
+      ...data,
+    });
+
     return new Response(JSON.stringify({
       ok: true,
       lead: data,
+      first_contact_automation: automation,
     }), {
       status: 201,
       headers: buildCors(origin),

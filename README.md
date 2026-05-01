@@ -9,10 +9,17 @@ Capturar leads reais da landing page e gravar em um CRM proprio, separado do flu
 ## O que tem aqui
 
 - `app/`: landing page simples com formulario e envio para endpoint proprio
+- `crm/`: painel interno V1 para leitura e tratamento dos leads
 - `backend/supabase/schema.sql`: estrutura minima do banco
+- `backend/supabase/crm_panel_v1.sql`: extensoes de banco e acesso interno do CRM
+- `backend/supabase/crm_interactions_v1.sql`: historico de interacoes e follow-up operacional
+- `backend/supabase/whatsapp_first_contact_v1.sql`: estrutura para automacao do primeiro contato
 - `backend/supabase/functions/create-public-lead/index.ts`: endpoint publico para receber lead
 - `docs/`: escopo da etapa 1 e checklist de go-live
 - `docs/IMPLANTACAO_SEGURA.md`: roteiro para publicar sem deixar dados expostos
+- `docs/CRM_V1_IMPLANTACAO.md`: passo a passo do painel interno
+- `docs/CRM_INTERACOES_V1.md`: setup da trilha de interacoes e follow-up
+- `docs/WHATSAPP_PRIMEIRO_CONTATO_V1.md`: setup do disparo automatico do primeiro contato
 
 ## Fluxo MVP
 

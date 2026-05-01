@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Itecologica CRM | Leads</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="crm-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">CRM V1</p>
+          <h1>Itecologica | Inbox de Leads</h1>
+          <p class="subtle">Entrada real da landing conectada ao mesmo Supabase.</p>
+        </div>
+        <div class="topbar-actions">
+          <div id="session-badge" class="session-badge hidden"></div>
+          <button id="signout-button" class="ghost hidden" type="button">Sair</button>
+        </div>
+      </header>
+
+      <main class="main-grid">
+        <section id="login-panel" class="panel login-panel">
+          <div class="panel-head">
+            <h2>Acesso interno</h2>
+            <p>Entre com o usuario cadastrado no Supabase Auth.</p>
+          </div>
+
+          <form id="login-form" class="stack-lg">
+            <label class="field">
+              <span>E-mail</span>
+              <input id="email" name="email" type="email" autocomplete="email" required />
+            </label>
+
+            <label class="field">
+              <span>Senha</span>
+              <input id="password" name="password" type="password" autocomplete="current-password" required />
+            </label>
+
+            <button class="primary" type="submit">Entrar</button>
+            <p id="login-feedback" class="feedback" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <section id="app-panel" class="app-panel hidden">
+          <div class="stats-row">
+            <article class="stat-card">
+              <small>Total</small>
+              <strong id="stat-total">0</strong>
+            </article>
+            <article class="stat-card">
+              <small>Novos</small>
+              <strong id="stat-new">0</strong>
+            </article>
+            <article class="stat-card">
+              <small>Em contato</small>
+              <strong id="stat-contact">0</strong>
+            </article>
+            <article class="stat-card">
+              <small>Fechados</small>
+              <strong id="stat-won">0</strong>
+            </article>
+          </div>
+
+          <div class="stats-row priority-row">
+            <article class="stat-card priority-card">
+              <small>Follow-up vencido</small>
+              <strong id="stat-overdue">0</strong>
+            </article>
+            <article class="stat-card priority-card">
+              <small>Sem interacao</small>
+              <strong id="stat-no-interaction">0</strong>
+            </article>
+            <article class="stat-card priority-card">
+              <small>Sem responsavel</small>
+              <strong id="stat-unassigned">0</strong>
+            </article>
+            <article class="stat-card priority-card">
+              <small>Sem proxima acao</small>
+              <strong id="stat-no-next-action">0</strong>
+            </article>
+          </div>
+
+          <section class="panel queue-panel">
+            <div class="panel-head">
+              <h2>Fila do dia</h2>
+              <p>Atalhos para o que precisa de atencao agora, sem procurar manualmente na base.</p>
+            </div>
+
+            <div class="queue-grid">
+              <button class="queue-card" type="button" data-queue-filter="overdue_follow_up">
+                <small>Atrasados</small>
+                <strong id="queue-overdue-count">0</strong>
+                <span>Leads com follow-up vencido e risco de esfriar.</span>
+              </button>
+
+              <button class="queue-card" type="button" data-queue-filter="today_follow_up">
+                <small>Para hoje</small>
+                <strong id="queue-today-count">0</strong>
+                <span>Leads com retorno programado para hoje.</span>
+              </button>
+
+              <button class="queue-card" type="button" data-queue-filter="unassigned">
+                <small>Sem responsavel</small>
+                <strong id="queue-unassigned-count">0</strong>
+                <span>Oportunidades sem dono definido.</span>
+              </button>
+
+              <button class="queue-card" type="button" data-queue-filter="new_no_contact">
+                <small>Novos sem contato</small>
+                <strong id="queue-new-no-contact-count">0</strong>
+                <span>Novos leads ainda sem primeira interacao registrada.</span>
+              </button>
+            </div>
+          </section>
+
+          <div class="workspace-grid">
+            <section class="panel leads-panel">
+              <div class="panel-head inline">
+                <div>
+                  <h2>Leads</h2>
+                  <p>Lista viva da landing page.</p>
+                </div>
+                <button id="refresh-button" class="ghost" type="button">Atualizar</button>
+              </div>
+
+              <div class="filters">
+                <input id="search-input" type="search" placeholder="Buscar por nome, empresa, telefone ou cidade" />
+                <select id="status-filter">
+                  <option value="">Todos os status</option>
+                  <option value="novo">Novo</option>
+                  <option value="em_contato">Em contato</option>
+                  <option value="qualificado">Qualificado</option>
+                  <option value="proposta">Proposta</option>
+                  <option value="fechado">Fechado</option>
+                  <option value="perdido">Perdido</option>
+                </select>
+                <select id="priority-filter">
+                  <option value="">Todas as prioridades</option>
+                  <option value="overdue_follow_up">Follow-up vencido</option>
+                  <option value="today_follow_up">Para hoje</option>
+                  <option value="no_interaction">Sem interacao</option>
+                  <option value="unassigned">Sem responsavel</option>
+                  <option value="no_next_action">Sem proxima acao</option>
+                  <option value="new_no_contact">Novos sem contato</option>
+                </select>
+                <select id="owner-filter">
+                  <option value="">Todos os responsaveis</option>
+                  <option value="mine">Meus leads</option>
+                  <option value="unassigned">Sem responsavel</option>
+                </select>
+              </div>
+
+              <div id="leads-list" class="leads-list"></div>
+            </section>
+
+            <section class="panel detail-panel">
+              <div class="panel-head">
+                <h2>Detalhe do lead</h2>
+                <p id="detail-subtitle">Selecione um lead na lista para abrir o atendimento.</p>
+              </div>
+
+              <div id="empty-state" class="empty-state">
+                <strong>Nenhum lead selecionado</strong>
+                <p>Abra um item da lista para revisar dados, assumir o lead e atualizar o status.</p>
+              </div>
+
+              <form id="lead-form" class="detail-form hidden">
+                <div class="detail-card">
+                  <div class="detail-grid">
+                    <div>
+                      <small>Nome</small>
+                      <strong id="lead-name">-</strong>
+                    </div>
+                    <div>
+                      <small>Empresa</small>
+                      <strong id="lead-company">-</strong>
+                    </div>
+                    <div>
+                      <small>Contato</small>
+                      <strong id="lead-contact">-</strong>
+                    </div>
+                    <div>
+                      <small>Origem</small>
+                      <strong id="lead-origin">-</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="detail-grid-form">
+                  <label class="field">
+                    <span>Status</span>
+                    <select id="lead-status" name="status">
+                      <option value="novo">Novo</option>
+                      <option value="em_contato">Em contato</option>
+                      <option value="qualificado">Qualificado</option>
+                      <option value="proposta">Proposta</option>
+                      <option value="fechado">Fechado</option>
+                      <option value="perdido">Perdido</option>
+                    </select>
+                  </label>
+
+                  <label class="field">
+                    <span>Qualificacao</span>
+                    <select id="lead-qualification" name="qualification_status">
+                      <option value="pendente">Pendente</option>
+                      <option value="em_analise">Em analise</option>
+                      <option value="aderente">Aderente</option>
+                      <option value="descartado">Descartado</option>
+                    </select>
+                  </label>
+
+                  <label class="field">
+                    <span>Responsavel</span>
+                    <input id="lead-assigned" name="assigned_to" type="text" placeholder="ex: comercial@empresa.com" />
+                  </label>
+
+                  <label class="field">
+                    <span>Primeiro contato</span>
+                    <input id="lead-first-contact" name="first_contact_at" type="datetime-local" />
+                  </label>
+
+                  <label class="field">
+                    <span>Proxima acao</span>
+                    <input id="lead-next-action" name="next_action" type="text" placeholder="ex: enviar proposta, ligar amanhã, pedir documento" />
+                  </label>
+
+                  <label class="field">
+                    <span>Follow-up agendado</span>
+                    <input id="lead-next-follow-up" name="next_follow_up_at" type="datetime-local" />
+                  </label>
+                </div>
+
+                <label class="field">
+                  <span>Observacoes internas</span>
+                  <textarea id="lead-internal-notes" name="internal_notes" rows="6" placeholder="Registro interno do atendimento, retorno, pendencias e proximos passos."></textarea>
+                </label>
+
+                <div class="meta-block">
+                  <small>Ultima interacao</small>
+                  <p id="lead-last-interaction-at">-</p>
+                  <small>Resumo da ultima interacao</small>
+                  <p id="lead-last-interaction-summary">-</p>
+                  <small>Primeiro contato automatico</small>
+                  <p id="lead-first-contact-status">-</p>
+                  <small>Canal do primeiro contato</small>
+                  <p id="lead-first-contact-channel">-</p>
+                  <small>Ultima tentativa automatica</small>
+                  <p id="lead-first-contact-attempted">-</p>
+                  <small>Erro da automacao</small>
+                  <p id="lead-first-contact-error">-</p>
+                  <small>Necessidade</small>
+                  <p id="lead-need">-</p>
+                  <small>Urgencia</small>
+                  <p id="lead-urgency">-</p>
+                  <small>Observacao do formulario</small>
+                  <p id="lead-public-notes">-</p>
+                </div>
+
+                <div class="form-actions">
+                  <button id="save-button" class="primary" type="submit">Salvar atendimento</button>
+                  <p id="detail-feedback" class="feedback" aria-live="polite"></p>
+                </div>
+
+                <section class="interaction-section">
+                  <div class="panel-head">
+                    <h2>Registrar interacao</h2>
+                    <p>Crie um historico real do atendimento e ja deixe a proxima acao combinada.</p>
+                  </div>
+
+                  <div class="detail-grid-form">
+                    <label class="field">
+                      <span>Tipo</span>
+                      <select id="interaction-type">
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="ligacao">Ligacao</option>
+                        <option value="email">E-mail</option>
+                        <option value="reuniao">Reuniao</option>
+                        <option value="nota_interna">Nota interna</option>
+                      </select>
+                    </label>
+
+                    <label class="field">
+                      <span>Resultado</span>
+                      <select id="interaction-outcome">
+                        <option value="">Selecione</option>
+                        <option value="sem_resposta">Sem resposta</option>
+                        <option value="retorno_agendado">Retorno agendado</option>
+                        <option value="em_andamento">Em andamento</option>
+                        <option value="qualificado">Qualificado</option>
+                        <option value="proposta_enviada">Proposta enviada</option>
+                        <option value="sem_interesse">Sem interesse</option>
+                        <option value="fechado">Fechado</option>
+                      </select>
+                    </label>
+
+                    <label class="field">
+                      <span>Canal</span>
+                      <input id="interaction-channel" type="text" placeholder="ex: WhatsApp, telefone, e-mail" />
+                    </label>
+
+                    <label class="field">
+                      <span>Proximo follow-up</span>
+                      <input id="interaction-next-follow-up" type="datetime-local" />
+                    </label>
+                  </div>
+
+                  <label class="field">
+                    <span>Resumo da interacao</span>
+                    <textarea id="interaction-summary" rows="4" placeholder="O que foi falado, objeções, sinal de compra e combinados."></textarea>
+                  </label>
+
+                  <label class="field">
+                    <span>Proxima acao combinada</span>
+                    <input id="interaction-next-action" type="text" placeholder="ex: mandar orçamento até 18h, ligar segunda às 9h" />
+                  </label>
+
+                  <div class="form-actions">
+                    <button id="interaction-save-button" class="primary" type="button">Registrar interacao</button>
+                    <p id="interaction-feedback" class="feedback" aria-live="polite"></p>
+                  </div>
+                </section>
+
+                <section class="interaction-section">
+                  <div class="panel-head">
+                    <h2>Historico</h2>
+                    <p>Sequencia de contatos e proximos passos registrados para este lead.</p>
+                  </div>
+
+                  <div id="interaction-history" class="interaction-history">
+                    <div class="empty-list">Nenhuma interacao registrada ainda.</div>
+                  </div>
+                </section>
+              </form>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./config.js?v=crm-v1-3"></script>
+    <script type="module" src="./app.js?v=crm-v1-3"></script>
+  </body>
+</html>
