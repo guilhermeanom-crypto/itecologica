@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Itecológica Analista | Diagnóstico</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="analyst-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Area do Analista</p>
+          <h1>Itecológica | Operação de Diagnóstico</h1>
+          <p class="subtle">Camada operacional separada do CRM para briefing, execução e revisão do diagnóstico.</p>
+        </div>
+        <div class="topbar-actions">
+          <div id="session-badge" class="session-badge hidden"></div>
+          <button id="signout-button" class="ghost hidden" type="button">Sair</button>
+        </div>
+      </header>
+
+      <main class="main-grid">
+        <section id="login-panel" class="panel login-panel">
+          <div class="panel-head">
+            <h2>Acesso interno</h2>
+            <p>Entre com o mesmo usuário autenticado no Supabase.</p>
+          </div>
+
+          <form id="login-form" class="stack-lg">
+            <label class="field">
+              <span>E-mail</span>
+              <input id="email" name="email" type="email" autocomplete="email" required />
+            </label>
+
+            <label class="field">
+              <span>Senha</span>
+              <input id="password" name="password" type="password" autocomplete="current-password" required />
+            </label>
+
+            <button class="primary" type="submit">Entrar</button>
+            <p id="login-feedback" class="feedback" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <section id="app-panel" class="app-panel hidden">
+          <div class="stats-row">
+            <article class="stat-card">
+              <small>Total de casos</small>
+              <strong id="stat-total">0</strong>
+            </article>
+            <article class="stat-card">
+              <small>Coletando</small>
+              <strong id="stat-collecting">0</strong>
+            </article>
+            <article class="stat-card">
+              <small>Em execução</small>
+              <strong id="stat-running">0</strong>
+            </article>
+            <article class="stat-card">
+              <small>Em revisão</small>
+              <strong id="stat-review">0</strong>
+            </article>
+          </div>
+
+          <div class="queue-row">
+            <button class="queue-card" type="button" data-queue-filter="ready_to_run">
+              <small>Prontos para rodar</small>
+              <strong id="queue-ready">0</strong>
+              <span>Casos com briefing suficiente para abrir uma execução.</span>
+            </button>
+            <button class="queue-card" type="button" data-queue-filter="running">
+              <small>Pipeline rodando</small>
+              <strong id="queue-running">0</strong>
+              <span>Execuções em andamento com etapas abertas.</span>
+            </button>
+            <button class="queue-card" type="button" data-queue-filter="awaiting_human_review">
+              <small>Aguardando revisão</small>
+              <strong id="queue-review">0</strong>
+              <span>Diagnósticos já consolidados para leitura técnica.</span>
+            </button>
+            <button class="queue-card" type="button" data-queue-filter="critical">
+              <small>Prioridade crítica</small>
+              <strong id="queue-critical">0</strong>
+              <span>Casos sensíveis, urgentes ou com maior pressão operacional.</span>
+            </button>
+          </div>
+
+          <div class="workspace-grid">
+            <aside class="sidebar-column">
+              <section class="panel action-panel">
+                <div class="panel-head">
+                  <h2>Novo caso</h2>
+                  <p>Use como fallback operacional. O caminho principal agora deve vir do handoff do CRM.</p>
+                </div>
+
+                <form id="new-case-form" class="stack-md">
+                  <label class="field">
+                    <span>Lead ID *</span>
+                    <input id="new-case-lead-id" name="lead_id" type="text" placeholder="uuid do lead vindo do CRM" required />
+                  </label>
+
+                  <label class="field">
+                    <span>Tipo de diagnóstico *</span>
+                    <select id="new-case-diagnosis-type" name="diagnosis_type" required>
+                      <option value="">Selecione</option>
+                      <option value="regularizacao_ambiental">Regularização ambiental</option>
+                      <option value="mapeamento_normativo_territorial">Mapeamento normativo territorial</option>
+                      <option value="pgrss">PGRSS</option>
+                    </select>
+                  </label>
+
+                  <label class="field">
+                    <span>Resumo do briefing</span>
+                    <textarea id="new-case-briefing" name="briefing_summary" rows="3"></textarea>
+                  </label>
+
+                  <label class="field">
+                    <span>Escopo territorial</span>
+                    <input id="new-case-scope" name="territorial_scope" type="text" placeholder="ex: Iturama/MG" />
+                  </label>
+
+                  <button id="new-case-button" class="primary" type="submit">Abrir diagnóstico</button>
+                  <p id="new-case-feedback" class="feedback" aria-live="polite"></p>
+                </form>
+              </section>
+
+              <section class="panel list-panel">
+                <div class="panel-head inline">
+                  <div>
+                    <h2>Casos</h2>
+                    <p>Fila operacional da área do Analista.</p>
+                  </div>
+                  <button id="refresh-button" class="ghost" type="button">Atualizar</button>
+                </div>
+
+                <div class="filters">
+                  <input id="search-input" type="search" placeholder="Buscar por título, empresa, tipo ou lead ID" />
+                  <select id="status-filter">
+                    <option value="">Todos os status</option>
+                    <option value="collecting_inputs">Coletando dados</option>
+                    <option value="ready_to_run">Pronto para rodar</option>
+                    <option value="running">Em execução</option>
+                    <option value="awaiting_human_review">Aguardando revisão</option>
+                    <option value="approved">Aprovado</option>
+                    <option value="rejected">Rejeitado</option>
+                  </select>
+                  <select id="type-filter">
+                    <option value="">Todos os tipos</option>
+                    <option value="regularizacao_ambiental">Regularização ambiental</option>
+                    <option value="mapeamento_normativo_territorial">Mapeamento normativo territorial</option>
+                    <option value="pgrss">PGRSS</option>
+                  </select>
+                </div>
+
+                <div id="cases-list" class="cases-list"></div>
+              </section>
+            </aside>
+
+            <section class="panel detail-panel">
+              <div class="panel-head">
+                <h2>Detalhe do caso</h2>
+                <p id="detail-subtitle">Selecione um caso para revisar briefing, execução e saída das etapas.</p>
+              </div>
+
+              <div id="empty-state" class="empty-state">
+                <strong>Nenhum caso selecionado</strong>
+                <p>Abra um item da lista para operar o diagnóstico na área do Analista.</p>
+              </div>
+
+              <div id="detail-view" class="detail-view hidden">
+                <form id="case-form" class="stack-lg">
+                  <div class="case-summary-card">
+                    <div class="detail-grid">
+                      <div>
+                        <small>Título</small>
+                        <strong id="case-title">-</strong>
+                      </div>
+                      <div>
+                        <small>Empresa</small>
+                        <strong id="case-company">-</strong>
+                      </div>
+                      <div>
+                        <small>Lead ID</small>
+                        <strong id="case-lead-id">-</strong>
+                      </div>
+                      <div>
+                        <small>Tipo</small>
+                        <strong id="case-type">-</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="detail-grid-form">
+                    <label class="field">
+                      <span>Status atual</span>
+                      <select id="case-status" disabled>
+                        <option value="collecting_inputs">Coletando dados</option>
+                        <option value="ready_to_run">Pronto para rodar</option>
+                        <option value="running">Em execução</option>
+                        <option value="awaiting_human_review">Aguardando revisão</option>
+                        <option value="approved">Aprovado</option>
+                        <option value="rejected">Rejeitado</option>
+                        <option value="archived">Arquivado</option>
+                      </select>
+                    </label>
+
+                    <label class="field">
+                      <span>Prioridade</span>
+                      <select id="case-priority" name="priority">
+                        <option value="low">Baixa</option>
+                        <option value="normal">Normal</option>
+                        <option value="high">Alta</option>
+                        <option value="critical">Crítica</option>
+                      </select>
+                    </label>
+
+                    <label class="field">
+                      <span>Responsável</span>
+                      <input id="case-assigned" name="assigned_to" type="text" placeholder="analista@empresa.com" />
+                    </label>
+
+                    <label class="field">
+                      <span>Tema</span>
+                      <input id="case-theme" name="theme" type="text" />
+                    </label>
+
+                    <label class="field">
+                      <span>Escopo territorial</span>
+                      <input id="case-scope" name="territorial_scope" type="text" />
+                    </label>
+
+                    <label class="field">
+                      <span>Necessidade declarada</span>
+                      <input id="case-declared-need" name="declared_need" type="text" />
+                    </label>
+                  </div>
+
+                  <label class="field">
+                    <span>Resumo do briefing</span>
+                    <textarea id="case-briefing" name="briefing_summary" rows="4"></textarea>
+                  </label>
+
+                  <label class="field">
+                    <span>Contexto do cliente</span>
+                    <textarea id="case-customer-context" name="customer_context" rows="3"></textarea>
+                  </label>
+
+                  <label class="field">
+                    <span>Restrições conhecidas</span>
+                    <textarea id="case-constraints" name="known_constraints" rows="3"></textarea>
+                  </label>
+
+                  <section class="nested-section">
+                    <div class="panel-head nested-head">
+                      <h3>Qualificação estruturada</h3>
+                      <p>Perguntas operacionais que deixam o briefing reaproveitável no pipeline e na proposta.</p>
+                    </div>
+
+                    <div class="detail-grid-form">
+                      <label class="field">
+                        <span>Tipo de demanda</span>
+                        <input id="case-demand-type" name="demand_type" type="text" placeholder="ex: renovação, licença nova, regularização" />
+                      </label>
+
+                      <label class="field">
+                        <span>Situação da licença</span>
+                        <select id="case-license-status" name="license_status">
+                          <option value="">Não informado</option>
+                          <option value="vigente">Vigente</option>
+                          <option value="vencida">Vencida</option>
+                          <option value="inexistente">Inexistente</option>
+                          <option value="em_processo">Em processo</option>
+                        </select>
+                      </label>
+
+                      <label class="field">
+                        <span>Licença vencida?</span>
+                        <select id="case-license-expired" name="license_expired">
+                          <option value="">Não informado</option>
+                          <option value="sim">Sim</option>
+                          <option value="nao">Não</option>
+                        </select>
+                      </label>
+
+                      <label class="field">
+                        <span>Vencida desde</span>
+                        <input id="case-expired-since" name="expired_since" type="text" placeholder="ex: jan/2025" />
+                      </label>
+
+                      <label class="field">
+                        <span>Fiscalização ativa?</span>
+                        <select id="case-active-inspection" name="active_inspection">
+                          <option value="">Não informado</option>
+                          <option value="sim">Sim</option>
+                          <option value="nao">Não</option>
+                        </select>
+                      </label>
+
+                      <label class="field">
+                        <span>Multa ativa?</span>
+                        <select id="case-active-fine" name="active_fine">
+                          <option value="">Não informado</option>
+                          <option value="sim">Sim</option>
+                          <option value="nao">Não</option>
+                        </select>
+                      </label>
+
+                      <label class="field">
+                        <span>Prazo urgente em dias</span>
+                        <input id="case-urgent-deadline-days" name="urgent_deadline_days" type="number" min="0" step="1" placeholder="ex: 15" />
+                      </label>
+
+                      <label class="field">
+                        <span>Tipo de serviço necessário</span>
+                        <input id="case-required-service" name="required_service" type="text" placeholder="ex: renovação LO, regularização, defesa" />
+                      </label>
+
+                      <label class="field">
+                        <span>CNAE</span>
+                        <input id="case-cnae" name="cnae" type="text" placeholder="ex: 4731-8/00" />
+                      </label>
+
+                      <label class="field">
+                        <span>Tipo de atividade</span>
+                        <input id="case-activity-type" name="activity_type" type="text" placeholder="ex: posto de combustíveis" />
+                      </label>
+
+                      <label class="field">
+                        <span>Órgão ambiental provável</span>
+                        <input id="case-probable-agency" name="probable_agency" type="text" placeholder="ex: SEMAD, município, órgão estadual" />
+                      </label>
+
+                      <label class="field">
+                        <span>Temperatura do lead</span>
+                        <select id="case-lead-temperature" name="lead_temperature">
+                          <option value="">Não informado</option>
+                          <option value="quente">Quente</option>
+                          <option value="morno">Morno</option>
+                          <option value="frio">Frio</option>
+                        </select>
+                      </label>
+                    </div>
+
+                    <label class="field">
+                      <span>Documentos disponíveis</span>
+                      <textarea id="case-available-documents" name="available_documents" rows="3" placeholder="ex: licença anterior, auto de infração, contrato social"></textarea>
+                    </label>
+                  </section>
+
+                  <div class="action-row">
+                    <button id="save-case-button" class="primary" type="submit">Salvar briefing</button>
+                    <button id="generate-canonical-button" class="ghost" type="button">Gerar diagnóstico canônico</button>
+                    <button id="prepare-run-button" class="ghost" type="button">Preparar execução</button>
+                  </div>
+                  <p class="subtle">O status do caso é controlado pelo pipeline e pelas ações oficiais de revisão.</p>
+                  <p id="case-feedback" class="feedback" aria-live="polite"></p>
+                </form>
+
+                <section class="panel canonical-panel">
+                  <div class="panel-head">
+                    <h3>Diagnóstico canônico</h3>
+                    <p>Pré-estrutura técnica gerada no backend a partir do caso e das respostas disponíveis.</p>
+                  </div>
+
+                  <div id="canonical-summary" class="run-summary empty-list">Nenhum diagnóstico canônico gerado para este caso.</div>
+                  <label class="field">
+                    <span>Payload canônico</span>
+                    <textarea id="canonical-payload" rows="14" readonly placeholder="O JSON consolidado aparecerá aqui."></textarea>
+                  </label>
+                  <p id="canonical-feedback" class="feedback" aria-live="polite"></p>
+
+                  <div class="panel-head nested-head">
+                    <h3>Resultado oficial do diagnóstico</h3>
+                    <p>Leitura oficial já adaptada ao motor interno da Itecológica.</p>
+                  </div>
+
+                  <div id="official-diagnostic-summary" class="run-summary empty-list">Nenhum resultado oficial materializado para este caso.</div>
+                  <label class="field">
+                    <span>Payload oficial do diagnóstico</span>
+                    <textarea id="official-diagnostic-payload" rows="14" readonly placeholder="O resultado oficial aparecerá aqui."></textarea>
+                  </label>
+
+                  <div class="panel-head nested-head">
+                    <h3>Plano oficial de execução</h3>
+                    <p>Desdobramento do diagnóstico em fases, tarefas, prazos e monitoramentos.</p>
+                  </div>
+
+                  <div id="official-execution-summary" class="run-summary empty-list">Nenhum plano oficial de execução materializado para este caso.</div>
+                  <label class="field">
+                    <span>Payload oficial de execução</span>
+                    <textarea id="official-execution-payload" rows="14" readonly placeholder="O plano oficial de execução aparecerá aqui."></textarea>
+                  </label>
+                </section>
+
+                <section class="run-panel">
+                  <div class="panel-head inline">
+                    <div>
+                      <h3>Execução atual</h3>
+                      <p id="run-subtitle">Nenhuma execução preparada ainda.</p>
+                    </div>
+                  </div>
+
+                  <div id="run-summary" class="run-summary empty-list">Nenhuma execução encontrada para este caso.</div>
+                  <label class="field">
+                    <span>Saída consolidada da execução</span>
+                    <textarea id="run-final-output" rows="12" readonly placeholder="O final_output da run aparecerá aqui."></textarea>
+                  </label>
+                  <div id="steps-list" class="steps-list"></div>
+                </section>
+
+                <section class="panel review-panel">
+                  <div class="panel-head">
+                    <h3>Revisão humana</h3>
+                    <p>Fechamento técnico do caso a partir da execução consolidada.</p>
+                  </div>
+
+                  <div id="review-summary" class="run-summary empty-list">Nenhuma revisão registrada para este caso.</div>
+                  <div class="action-row">
+                    <button id="approve-case-button" class="primary" type="button">Aprovar diagnóstico</button>
+                    <button id="reject-case-button" class="ghost" type="button">Rejeitar para ajustes</button>
+                    <button id="reopen-case-button" class="ghost" type="button">Reabrir caso</button>
+                  </div>
+                  <p id="review-feedback" class="feedback" aria-live="polite"></p>
+                </section>
+
+                <section class="panel step-output-panel">
+                  <div class="panel-head">
+                    <h3>Registrar saída da etapa</h3>
+                    <p>Use enquanto a execução ainda for híbrida ou manual.</p>
+                  </div>
+
+                  <form id="step-output-form" class="stack-md">
+                    <label class="field">
+                      <span>Etapa</span>
+                      <select id="step-code" name="step_code">
+                        <option value="agent_01">Agente 01</option>
+                        <option value="agent_02">Agente 02</option>
+                        <option value="agent_04">Agente 04</option>
+                        <option value="agent_03">Agente 03</option>
+                      </select>
+                    </label>
+
+                    <label class="field">
+                      <span>Status</span>
+                      <select id="step-status" name="status">
+                        <option value="completed">Concluída</option>
+                        <option value="failed">Falhou</option>
+                        <option value="skipped">Ignorada</option>
+                      </select>
+                    </label>
+
+                    <label class="field">
+                      <span>JSON de saída</span>
+                      <textarea id="step-output-json" name="output_json" rows="10" placeholder='{"enquadramento": {...}}'></textarea>
+                    </label>
+
+                    <label class="field">
+                      <span>Erro</span>
+                      <textarea id="step-error-message" name="error_message" rows="2" placeholder="Preencha apenas quando a etapa falhar."></textarea>
+                    </label>
+
+                    <button id="save-step-button" class="primary" type="submit">Registrar etapa</button>
+                    <p id="step-feedback" class="feedback" aria-live="polite"></p>
+                  </form>
+                </section>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./config.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
