@@ -22,7 +22,8 @@ Antes de publicar:
 2. ter `SUPABASE_SERVICE_ROLE_KEY` válida no ambiente de deploy
 3. ter `ALLOWED_ORIGINS` revisado
 4. ter `TURNSTILE_SECRET_KEY` revisado
-5. ter usuário interno válido em `crm_internal_users`
+5. ter `TURNSTILE_REQUIRED=true` definido em ambientes públicos (home em produção). Sem essa flag, a função `create-public-lead` aceita requisições mesmo se `TURNSTILE_SECRET_KEY` estiver ausente. Com `TURNSTILE_REQUIRED=true`, falta de secret bloqueia a requisição e loga erro.
+6. ter usuário interno válido em `crm_internal_users`
 
 ---
 

@@ -372,9 +372,31 @@ async function triggerFirstContactAutomation(
   }
 }
 
+function isTurnstileRequired(): boolean {
+  const flag = Deno.env.get("TURNSTILE_REQUIRED");
+  if (!flag) return false;
+  const normalized = flag.trim().toLowerCase();
+  return normalized === "true" || normalized === "1" || normalized === "yes";
+}
+
 async function verifyTurnstile(token: string): Promise<TurnstileVerification> {
   const secret = Deno.env.get("TURNSTILE_SECRET_KEY");
   if (!secret) {
+    if (isTurnstileRequired()) {
+      console.error(
+        "turnstile required but secret missing",
+        "TURNSTILE_REQUIRED=true sem TURNSTILE_SECRET_KEY definido. Bloqueando requisicao para evitar flood de leads sem captcha.",
+      );
+      return {
+        ok: false,
+        code: "turnstile_secret_missing",
+        detail: "Servico anti-bot indisponivel no momento. Tente novamente em alguns instantes.",
+      };
+    }
+    console.warn(
+      "turnstile bypass active",
+      "TURNSTILE_SECRET_KEY ausente. Use TURNSTILE_REQUIRED=true em ambientes publicos para forcar bloqueio quando o secret nao estiver presente.",
+    );
     return { ok: true, code: "turnstile_not_configured" };
   }
 

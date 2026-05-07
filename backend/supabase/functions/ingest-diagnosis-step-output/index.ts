@@ -130,6 +130,9 @@ serve(async (req) => {
     }
 
     const outputPayload = body.output_payload || {};
+    // Optimistic concurrency: so o UPDATE passa se o step ainda estiver em "running".
+    // Em caso de duplo POST (rede flaky, double-click), o segundo retorna 0 linhas
+    // e devolvemos 409 sem sobrescrever output_payload da primeira execucao.
     const { data: updatedStep, error: updateStepError } = await supabase
       .from("crm_diagnosis_run_steps")
       .update({
@@ -140,12 +143,19 @@ serve(async (req) => {
         finished_at: nextStatus === "completed" || nextStatus === "failed" || nextStatus === "skipped" ? now : null,
       })
       .eq("id", targetStep.id)
+      .eq("status", "running")
       .select("*")
-      .single();
+      .maybeSingle();
 
-    if (updateStepError || !updatedStep) {
+    if (updateStepError) {
       console.error("ingest-diagnosis-step-output update step error", updateStepError);
       return jsonResponse(500, { error: "Nao foi possivel registrar a saida da etapa." }, origin);
+    }
+
+    if (!updatedStep) {
+      return jsonResponse(409, {
+        error: "Esta etapa ja foi atualizada por outra requisicao. Recarregue o caso e confira o estado atual antes de tentar novamente.",
+      }, origin);
     }
 
     if (nextStatus === "completed" || nextStatus === "skipped") {
