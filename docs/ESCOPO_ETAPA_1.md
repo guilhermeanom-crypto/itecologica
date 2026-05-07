@@ -1,5 +1,9 @@
 # Escopo Etapa 1
 
+## Status documental
+
+Documento historico de escopo inicial. Nao representa mais sozinho o estado oficial atual do sistema.
+
 ## Meta
 
 Ter uma estrutura nova e independente que capte leads da landing page e grave em um CRM proprio.

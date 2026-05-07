@@ -1,5 +1,9 @@
 # Implantacao Segura
 
+## Status documental
+
+Documento de apoio de seguranca e endurecimento. Complementa a publicacao oficial, mas nao substitui o roteiro principal de deploy.
+
 ## Objetivo
 
 Colocar o prototipo no ar sem deixar banco aberto nem endpoint frouxo.

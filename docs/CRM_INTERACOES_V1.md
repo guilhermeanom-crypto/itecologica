@@ -1,5 +1,9 @@
 # CRM Interacoes V1
 
+## Status documental
+
+Documento de apoio da etapa de CRM. Registra a ampliacao do historico comercial, mas nao e fonte principal do fluxo oficial atual.
+
 ## Objetivo
 
 Registrar o historico real de cada lead no CRM, sem depender apenas de observacao livre, e deixar a proxima acao combinada visivel para o time.

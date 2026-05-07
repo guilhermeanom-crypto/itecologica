@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "tema": "",
+    "versao": "1.0",
+    "data_criacao": "",
+    "fonte_producao": "manual",
+    "status_validacao": "rascunho",
+    "escopo_territorial": [],
+    "observacoes_gerais": []
+  },
+  "base_oficial": {
+    "leis": [],
+    "decretos": [],
+    "instrucoes_normativas": [],
+    "resolucoes": [],
+    "normas_tecnicas": [],
+    "portarias": [],
+    "orgaos_envolvidos": [],
+    "sistemas_oficiais": [],
+    "instrumentos_oficiais": [],
+    "fontes_oficiais": [],
+    "atos_setoriais_correlatos": []
+  },
+  "enquadramento": {
+    "quem_se_sujeita": [],
+    "quem_pode_ser_afetado_indiretamente": [],
+    "quando_aplica": [],
+    "quando_nao_aplica": [],
+    "criterios_de_entrada": [],
+    "criterios_de_exclusao": [],
+    "delimitacao_objeto": [],
+    "objeto_obrigacao": []
+  },
+  "operacao": {
+    "fluxo_operacional": [],
+    "etapas_execucao": [],
+    "decisoes_condicionais": [],
+    "pontos_criticos": [],
+    "dependencias_previas": [],
+    "resultado_esperado": []
+  },
+  "documentacao": {
+    "documentos_necessarios": [],
+    "documentos_comprobatorios": [],
+    "provas_aceitaveis": [],
+    "provas_insuficientes": [],
+    "pontos_auditoria": []
+  },
+  "riscos": {
+    "riscos_tecnicos": [],
+    "riscos_regulatorios": [],
+    "riscos_operacionais": [],
+    "erros_comuns": [],
+    "falhas_fatais": []
+  },
+  "servico_habilis": {
+    "diagnostico": [],
+    "escopo_execucao": [],
+    "escopo_nao_incluso": [],
+    "entregaveis": [],
+    "perfil_profissional_envolvido": [],
+    "tempo_estimado": [],
+    "precificacao": []
+  },
+  "inteligencia_interface": {
+    "gatilhos_interface": [],
+    "regras_interface": [],
+    "campos_de_entrada": [],
+    "campos_calculados": [],
+    "mensagens_criticas": [],
+    "alertas_contextuais": [],
+    "cards_explicativos": []
+  },
+  "operacional": {
+    "fluxo_operacional": [],
+    "etapas_execucao": [],
+    "documentos_necessarios": [],
+    "pontos_de_controle": [],
+    "provas_obrigatorias": [],
+    "riscos_operacionais": []
+  },
+  "servico": {
+    "descricao_servico": "",
+    "escopo": [],
+    "entregaveis": [],
+    "delimitacao_escopo": []
+  },
+  "precificacao": {
+    "modelo": "",
+    "variaveis": [],
+    "faixa_valor": "",
+    "observacoes": []
+  },
+  "interface": {
+    "regras_interface": [],
+    "gatilhos_automacao": []
+  },
+  "auditoria": {
+    "erros_criticos": [],
+    "inconsistencias": [],
+    "extrapolacoes": [],
+    "generalizacoes": [],
+    "itens_sem_base": [],
+    "riscos_regulatorios": [],
+    "nivel_risco": "",
+    "status_validacao": ""
+  }
+}

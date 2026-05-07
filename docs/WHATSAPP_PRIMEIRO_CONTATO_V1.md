@@ -1,5 +1,9 @@
 # WhatsApp Primeiro Contato V1
 
+## Status documental
+
+Documento de trilha opcional. Esta integracao nao faz parte do nucleo obrigatorio do fluxo oficial desta etapa.
+
 ## Objetivo
 
 Disparar o primeiro contato automaticamente logo apos a entrada do lead, reduzindo o tempo de resposta comercial e registrando o resultado no CRM.

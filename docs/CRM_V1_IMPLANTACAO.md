@@ -1,5 +1,9 @@
 # CRM V1 - Implantacao
 
+## Status documental
+
+Documento historico da implantacao inicial do CRM. Deve ser lido como base de origem, nao como guia principal da etapa atual.
+
 ## Objetivo
 
 Abrir um painel interno real no mesmo ecossistema da landing page, lendo e atualizando os leads de `crm_leads_public`.
