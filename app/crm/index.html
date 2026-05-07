@@ -258,6 +258,32 @@
                   <p id="lead-public-notes">-</p>
                 </div>
 
+                <section class="diagnosis-section">
+                  <div class="panel-head">
+                    <h2>Handoff para Diagnóstico</h2>
+                    <p>Abra ou retome o caso na Área do Analista sem depender de UUID manual.</p>
+                  </div>
+
+                  <div class="detail-grid-form">
+                    <label class="field">
+                      <span>Tipo de diagnóstico</span>
+                      <select id="lead-diagnosis-type">
+                        <option value="regularizacao_ambiental">Regularização ambiental</option>
+                        <option value="mapeamento_normativo_territorial">Mapeamento normativo territorial</option>
+                        <option value="pgrss">PGRSS</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div id="lead-diagnosis-summary" class="empty-list">Nenhum caso de diagnóstico vinculado a este lead ainda.</div>
+
+                  <div class="form-actions">
+                    <button id="lead-open-diagnosis-button" class="primary" type="button">Encaminhar para Diagnóstico</button>
+                    <button id="lead-open-analyst-button" class="ghost" type="button" disabled>Abrir na Área do Analista</button>
+                    <p id="lead-diagnosis-feedback" class="feedback" aria-live="polite"></p>
+                  </div>
+                </section>
+
                 <div class="form-actions">
                   <button id="save-button" class="primary" type="submit">Salvar atendimento</button>
                   <p id="detail-feedback" class="feedback" aria-live="polite"></p>

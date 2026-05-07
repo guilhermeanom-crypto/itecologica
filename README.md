@@ -1,67 +1,122 @@
-# Habilis CRM Captacao MVP
+# ITECOLOGICA Sistema Central V1
 
-Pacote independente para colocar a captacao de leads no ar antes de plugar o restante do sistema operacional.
+Base central da ITECOLOGICA para:
 
-## Objetivo
+- captacao publica de leads
+- CRM comercial interno
+- Area do Analista para diagnostico
+- backend Supabase com funcoes e estado operacional
 
-Capturar leads reais da landing page e gravar em um CRM proprio, separado do fluxo hibrido atual.
+## Mapa oficial
 
-## O que tem aqui
+O mapa oficial do sistema esta em:
 
-- `app/`: landing page simples com formulario e envio para endpoint proprio
-- `crm/`: painel interno V1 para leitura e tratamento dos leads
-- `backend/supabase/schema.sql`: estrutura minima do banco
-- `backend/supabase/crm_panel_v1.sql`: extensoes de banco e acesso interno do CRM
-- `backend/supabase/crm_interactions_v1.sql`: historico de interacoes e follow-up operacional
-- `backend/supabase/whatsapp_first_contact_v1.sql`: estrutura para automacao do primeiro contato
-- `backend/supabase/functions/create-public-lead/index.ts`: endpoint publico para receber lead
-- `docs/`: escopo da etapa 1 e checklist de go-live
-- `docs/IMPLANTACAO_SEGURA.md`: roteiro para publicar sem deixar dados expostos
-- `docs/CRM_V1_IMPLANTACAO.md`: passo a passo do painel interno
-- `docs/CRM_INTERACOES_V1.md`: setup da trilha de interacoes e follow-up
-- `docs/WHATSAPP_PRIMEIRO_CONTATO_V1.md`: setup do disparo automatico do primeiro contato
+- [docs/MAPA_SISTEMA_CENTRAL_V1.md](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/docs/MAPA_SISTEMA_CENTRAL_V1.md)
 
-## Fluxo MVP
+## Documentacao viva desta etapa
 
-1. O visitante preenche o formulario.
-2. A landing envia os dados para a edge function `create-public-lead`.
-3. A funcao valida os campos e grava em `crm_leads_public`.
-4. O time comercial passa a trabalhar em cima dessa base nova.
+Se a duvida for operacional, arquitetural ou de publicacao, os documentos centrais sao:
 
-## Como validar rapido
+- [docs/MAPA_SISTEMA_CENTRAL_V1.md](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/docs/MAPA_SISTEMA_CENTRAL_V1.md)
+- [docs/ORQUESTRACAO_HABILIS_ITECOLOGICA_V1.md](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/docs/ORQUESTRACAO_HABILIS_ITECOLOGICA_V1.md)
+- [docs/PUBLICACAO_VALIDACAO_SUPABASE_OFICIAL_V1.md](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/docs/PUBLICACAO_VALIDACAO_SUPABASE_OFICIAL_V1.md)
+- [docs/FECHAMENTO_ETAPA_FLUXO_OFICIAL_V1.md](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/docs/FECHAMENTO_ETAPA_FLUXO_OFICIAL_V1.md)
+- [docs/MAPA_TRANSPLANTACAO_OFICIAL_DIAGNOSTICO_V1.md](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/docs/MAPA_TRANSPLANTACAO_OFICIAL_DIAGNOSTICO_V1.md)
 
-1. Configure `app/config.js` a partir de `app/config.example.js`.
-2. Publique a tabela e a funcao no Supabase.
-3. Abra `app/index.html` em um servidor estatico.
-4. Envie um lead de teste.
-5. Confirme se o registro entrou no banco.
+## Documentacao de apoio e historico
 
-## Seguranca do modelo
+Os demais arquivos em `docs/` devem ser lidos como apoio complementar, historico de etapa ou trilha futura, nao como fonte principal de operacao.
 
-- o banco nao aceita insert anonimo direto
-- a edge function grava com `service role`
-- somente origens permitidas podem chamar pelo navegador
-- Turnstile pode ser ativado para uso real
+Resumo pratico:
 
-## O que este MVP resolve
+- `app/`: home publica oficial
+- `crm/`: CRM oficial
+- `analista/`: Area do Analista oficial
+- `backend/supabase/`: banco, politicas e edge functions oficiais
+- `backend/domain/diagnostic/`: nucleo novo de diagnostico
 
-- captacao real
-- centralizacao inicial dos leads
-- base limpa para integrar CRM, automacao e IA depois
+## Publicacao atual
 
-## O que ainda nao resolve
+Hoje o projeto da Vercel esta configurado com `Root Directory = app`.
 
-- funil comercial completo
-- proposta automatica
-- atendimento por WhatsApp
-- roteamento comercial
-- IA respondendo sozinha ao cliente
+Isso significa que as rotas vivas no dominio estao saindo desta camada:
 
-## Proximo passo recomendado
+- `https://www.itecologica.com.br/` -> `app/index.html`
+- `https://www.itecologica.com.br/crm/` -> `app/crm/`
+- `https://www.itecologica.com.br/analista/` -> `app/analista/`
 
-Depois de validar a entrada do lead, a evolucao mais segura e:
+Para evitar confusao:
 
-1. listar leads em um painel interno
-2. adicionar status do funil
-3. registrar contato realizado
-4. adicionar qualificacao automatica por IA
+- `crm/` continua sendo a origem canonica de edicao do CRM
+- `analista/` continua sendo a origem canonica de edicao da Area do Analista
+- `app/` e a superficie publicada atual na Vercel
+
+## Fluxo canonico
+
+1. visitante entra na `home`
+2. a home envia lead para `create-public-lead`
+3. o lead entra em `crm_leads_public`
+4. o time comercial trabalha o lead no `CRM`
+5. o CRM faz handoff para a `Area do Analista`
+6. o Analista abre, estrutura e executa o diagnostico
+7. o backend consolida artefatos, revisao e saida
+
+## O que e oficial neste repositorio
+
+### Home publica
+
+- [app/index.html](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/app/index.html)
+- [app/app.js](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/app/app.js)
+- [app/config.js](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/app/config.js)
+
+### CRM comercial
+
+- [crm/index.html](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/crm/index.html)
+- [crm/app.js](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/crm/app.js)
+- [crm/config.js](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/crm/config.js)
+
+### Area do Analista
+
+- [analista/index.html](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/analista/index.html)
+- [analista/app.js](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/analista/app.js)
+- [analista/config.js](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/analista/config.js)
+
+### Backend
+
+- [backend/supabase/schema.sql](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/backend/supabase/schema.sql)
+- [backend/supabase/crm_panel_v1.sql](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/backend/supabase/crm_panel_v1.sql)
+- [backend/supabase/diagnosis_v1.sql](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/backend/supabase/diagnosis_v1.sql)
+- [backend/supabase/functions/create-public-lead/index.ts](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/backend/supabase/functions/create-public-lead/index.ts)
+- [backend/supabase/functions/open-diagnosis-case/index.ts](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/backend/supabase/functions/open-diagnosis-case/index.ts)
+- [backend/supabase/functions/prepare-diagnosis-run/index.ts](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/backend/supabase/functions/prepare-diagnosis-run/index.ts)
+- [backend/supabase/functions/ingest-diagnosis-step-output/index.ts](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/backend/supabase/functions/ingest-diagnosis-step-output/index.ts)
+- [backend/supabase/functions/generate-canonical-diagnosis/index.ts](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/backend/supabase/functions/generate-canonical-diagnosis/index.ts)
+
+## O que nao participa do fluxo oficial desta etapa
+
+- `analista_v2/` e trilha futura estacionada, ainda nao substitui a Area do Analista atual e nao participa do fluxo operacional desta etapa
+
+## Regra de edicao daqui para frente
+
+Se o ajuste for comercial, editar:
+
+- `crm/`
+- `backend/supabase/` relacionado ao CRM
+
+Se o ajuste for diagnostico operacional, editar:
+
+- `analista/`
+- `backend/supabase/` relacionado ao diagnostico
+- `backend/domain/diagnostic/`
+
+Se o ajuste for site publico, editar:
+
+- `app/`
+
+## Proximo marco estrutural
+
+O ajuste mais importante agora e:
+
+- publicar e validar no ambiente oficial o fluxo ja consolidado
+- encerrar esta etapa pelo checklist de ponta a ponta
+- abrir a proxima fase apenas depois do fechamento em `docs/FECHAMENTO_ETAPA_FLUXO_OFICIAL_V1.md`

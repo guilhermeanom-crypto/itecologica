@@ -20,6 +20,11 @@ const leadForm = document.getElementById("lead-form");
 const detailSubtitle = document.getElementById("detail-subtitle");
 const detailFeedback = document.getElementById("detail-feedback");
 const saveButton = document.getElementById("save-button");
+const diagnosisSummary = document.getElementById("lead-diagnosis-summary");
+const diagnosisFeedback = document.getElementById("lead-diagnosis-feedback");
+const diagnosisTypeField = document.getElementById("lead-diagnosis-type");
+const openDiagnosisButton = document.getElementById("lead-open-diagnosis-button");
+const openAnalystButton = document.getElementById("lead-open-analyst-button");
 const interactionHistory = document.getElementById("interaction-history");
 const interactionFeedback = document.getElementById("interaction-feedback");
 const interactionSaveButton = document.getElementById("interaction-save-button");
@@ -72,8 +77,10 @@ let crmUser = null;
 let leads = [];
 let selectedLeadId = null;
 let selectedLeadInteractions = [];
+let selectedLeadDiagnosisCases = [];
 let isSavingLead = false;
 let isSavingInteraction = false;
+let isOpeningDiagnosis = false;
 
 function setFeedback(node, message, type = "") {
   node.textContent = message;
@@ -121,6 +128,16 @@ function setInteractionSavingState(isSaving) {
   });
 }
 
+function setDiagnosisOpeningState(isSaving) {
+  isOpeningDiagnosis = isSaving;
+  if (openDiagnosisButton) {
+    openDiagnosisButton.disabled = isSaving;
+    openDiagnosisButton.textContent = isSaving
+      ? "Encaminhando..."
+      : "Encaminhar para Diagnóstico";
+  }
+}
+
 function escapeHtml(value) {
   return String(value || "")
     .replaceAll("&", "&amp;")
@@ -161,6 +178,10 @@ function formatEnumLabel(value) {
   return String(value || "-")
     .replaceAll("_", " ")
     .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function buildAnalystCaseUrl(caseId) {
+  return new URL(`/analista/?case_id=${encodeURIComponent(caseId)}`, window.location.origin).toString();
 }
 
 function isLeadOverdue(lead) {
@@ -278,6 +299,61 @@ function resetInteractionComposer() {
   setFeedback(interactionFeedback, "");
 }
 
+function getActiveDiagnosisCase() {
+  return selectedLeadDiagnosisCases.find((item) =>
+    !["archived", "rejected"].includes(String(item.status || "").trim().toLowerCase()),
+  ) || null;
+}
+
+function buildDiagnosisBriefingSummary(lead) {
+  const parts = [
+    lead?.need ? `Necessidade: ${lead.need}` : "",
+    fields.nextAction?.value?.trim() ? `Próxima ação comercial: ${fields.nextAction.value.trim()}` : "",
+    fields.internalNotes?.value?.trim() ? `Notas internas: ${fields.internalNotes.value.trim()}` : "",
+  ].filter(Boolean);
+
+  return parts.join(" | ");
+}
+
+async function fetchLeadDiagnosisCases(leadId) {
+  if (!leadId || !supabase) {
+    selectedLeadDiagnosisCases = [];
+    renderDiagnosisSummary();
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("crm_diagnosis_cases")
+    .select("*")
+    .eq("lead_id", leadId)
+    .order("updated_at", { ascending: false })
+    .limit(20);
+
+  if (error) {
+    const errorText = `${error.code || ""} ${error.message || ""} ${error.details || ""}`.toLowerCase();
+    if (
+      error.code === "42P01"
+      || errorText.includes("crm_diagnosis_cases")
+      && errorText.includes("does not exist")
+    ) {
+      selectedLeadDiagnosisCases = [];
+      diagnosisSummary.innerHTML = '<div class="empty-list">Execute backend/supabase/diagnosis_v1.sql para habilitar a trilha de diagnóstico.</div>';
+      openAnalystButton.disabled = true;
+      return;
+    }
+
+    selectedLeadDiagnosisCases = [];
+    diagnosisSummary.innerHTML = `<div class="empty-list">${escapeHtml(error.message || "Falha ao carregar os casos de diagnóstico.")}</div>`;
+    openAnalystButton.disabled = true;
+    return;
+  }
+
+  if (selectedLeadId !== leadId) return;
+
+  selectedLeadDiagnosisCases = data || [];
+  renderDiagnosisSummary();
+}
+
 function renderInteractionHistory() {
   if (!interactionHistory) return;
 
@@ -308,13 +384,48 @@ function renderInteractionHistory() {
   `).join("");
 }
 
+function renderDiagnosisSummary() {
+  const lead = leads.find((item) => item.id === selectedLeadId) || null;
+  if (!lead) {
+    diagnosisSummary.innerHTML = '<div class="empty-list">Selecione um lead para ver o handoff de diagnóstico.</div>';
+    openAnalystButton.disabled = true;
+    return;
+  }
+
+  if (!selectedLeadDiagnosisCases.length) {
+    diagnosisSummary.innerHTML = '<div class="empty-list">Nenhum caso de diagnóstico vinculado a este lead ainda.</div>';
+    openAnalystButton.disabled = true;
+    return;
+  }
+
+  diagnosisSummary.innerHTML = `
+    <div class="diagnosis-case-list">
+      ${selectedLeadDiagnosisCases.map((item) => `
+        <article class="diagnosis-case-card">
+          <div class="lead-tags">
+            <span class="tag">${escapeHtml(formatEnumLabel(item.diagnosis_type))}</span>
+            <span class="tag">${escapeHtml(formatEnumLabel(item.status))}</span>
+            <span class="tag">${escapeHtml(item.priority || "normal")}</span>
+          </div>
+          <strong>${escapeHtml(item.title || "Caso sem titulo")}</strong>
+          <p>${escapeHtml(item.briefing_summary || "Sem resumo operacional ainda.")}</p>
+        </article>
+      `).join("")}
+    </div>
+  `;
+
+  openAnalystButton.disabled = !getActiveDiagnosisCase();
+}
+
 async function setSelectedLead(leadId) {
   selectedLeadId = leadId;
   selectedLeadInteractions = [];
+  selectedLeadDiagnosisCases = [];
   resetInteractionComposer();
   renderLeads();
   renderSelectedLead();
   await fetchLeadInteractions(leadId);
+  await fetchLeadDiagnosisCases(leadId);
 }
 
 function renderStats() {
@@ -454,8 +565,11 @@ function renderSelectedLead() {
   fields.need.textContent = lead.need || "-";
   fields.urgency.textContent = lead.urgency || "-";
   fields.publicNotes.textContent = lead.notes || "-";
+  diagnosisTypeField.value = getActiveDiagnosisCase()?.diagnosis_type || "regularizacao_ambiental";
 
   setFeedback(detailFeedback, "");
+  setFeedback(diagnosisFeedback, "");
+  renderDiagnosisSummary();
   renderInteractionHistory();
 }
 
@@ -534,6 +648,7 @@ async function fetchLeads() {
 
   if (selectedLeadId) {
     await fetchLeadInteractions(selectedLeadId);
+    await fetchLeadDiagnosisCases(selectedLeadId);
   }
 }
 
@@ -594,7 +709,81 @@ function showLogin() {
   leads = [];
   selectedLeadId = null;
   selectedLeadInteractions = [];
+  selectedLeadDiagnosisCases = [];
   renderInteractionHistory();
+  renderDiagnosisSummary();
+}
+
+async function handleOpenDiagnosisCase() {
+  if (isOpeningDiagnosis) return;
+
+  const lead = leads.find((item) => item.id === selectedLeadId);
+  if (!lead) return;
+
+  setDiagnosisOpeningState(true);
+  setFeedback(diagnosisFeedback, "Encaminhando para diagnóstico...");
+
+  try {
+    const body = {
+      lead_id: lead.id,
+      diagnosis_type: diagnosisTypeField.value,
+      briefing_summary: buildDiagnosisBriefingSummary(lead),
+      territorial_scope: [lead.city, lead.state].filter(Boolean).join("/"),
+      declared_need: lead.need || "",
+      customer_context: lead.notes || "",
+      json_payload: {
+        cnae_principal: lead.cnae || "",
+        cnpj: lead.cnpj || "",
+        enterprise_size: "",
+        situacao: "",
+      },
+    };
+
+    const { data, error } = await supabase.functions.invoke("open-diagnosis-case", { body });
+    if (error) throw error;
+    if (!data?.ok) throw new Error(data?.error || "Falha ao abrir o caso de diagnóstico.");
+
+    const diagnosisCase = data.case || null;
+    const reused = Boolean(data.existing_case);
+
+    await fetchLeads();
+    if (selectedLeadId) {
+      await fetchLeadInteractions(selectedLeadId);
+      await fetchLeadDiagnosisCases(selectedLeadId);
+      renderSelectedLead();
+    }
+
+    setFeedback(
+      diagnosisFeedback,
+      reused
+        ? "Já existia um caso ativo para esse lead. Abrindo o vínculo atual."
+        : "Lead encaminhado para a Área do Analista com sucesso.",
+      "success",
+    );
+
+    if (diagnosisCase?.diagnosis_type) {
+      diagnosisTypeField.value = diagnosisCase.diagnosis_type;
+    }
+
+    if (diagnosisCase?.id) {
+      openAnalystButton.disabled = false;
+      openAnalystButton.dataset.caseId = diagnosisCase.id;
+    }
+  } catch (error) {
+    setFeedback(diagnosisFeedback, error.message || "Falha ao encaminhar para diagnóstico.", "error");
+  } finally {
+    setDiagnosisOpeningState(false);
+  }
+}
+
+function handleOpenAnalystArea() {
+  const activeCase = getActiveDiagnosisCase();
+  if (!activeCase?.id) {
+    setFeedback(diagnosisFeedback, "Nenhum caso ativo de diagnóstico disponível para abrir.", "error");
+    return;
+  }
+
+  window.open(buildAnalystCaseUrl(activeCase.id), "_blank", "noopener");
 }
 
 async function bootstrap() {
@@ -669,6 +858,8 @@ refreshButton.addEventListener("click", async () => {
     setFeedback(detailFeedback, error.message || "Falha ao atualizar os leads.", "error");
   }
 });
+openDiagnosisButton.addEventListener("click", handleOpenDiagnosisCase);
+openAnalystButton.addEventListener("click", handleOpenAnalystArea);
 
 searchInput.addEventListener("input", renderLeads);
 statusFilter.addEventListener("change", renderLeads);
@@ -699,16 +890,18 @@ leadForm.addEventListener("submit", async (event) => {
   };
 
   try {
-    const { data, error } = await supabase
-      .from("crm_leads_public")
-      .update(payload)
-      .eq("id", lead.id)
-      .select("*")
-      .single();
-
+    const { data, error } = await supabase.functions.invoke("update-crm-lead", {
+      body: {
+        lead_id: lead.id,
+        ...payload,
+      },
+    });
     if (error) throw error;
+    if (!data?.ok) throw new Error(data?.error || "Falha ao atualizar o lead.");
 
-    leads = leads.map((item) => item.id === lead.id ? data : item);
+    const updatedLead = data.lead;
+
+    leads = leads.map((item) => item.id === lead.id ? updatedLead : item);
     renderStats();
     renderLeads();
     renderSelectedLead();
@@ -737,15 +930,13 @@ interactionSaveButton.addEventListener("click", async () => {
   const interactionChannel = fields.interactionChannel.value.trim() || formatEnumLabel(interactionType);
   const interactionNextAction = fields.interactionNextAction.value.trim() || fields.nextAction.value.trim() || null;
   const interactionNextFollowUp = fromDateTimeLocal(fields.interactionNextFollowUp.value) || fromDateTimeLocal(fields.nextFollowUp.value);
-  const interactionTimestamp = new Date().toISOString();
 
   setInteractionSavingState(true);
   setFeedback(interactionFeedback, "Registrando...");
 
   try {
-    const { data: interaction, error: interactionError } = await supabase
-      .from("crm_lead_interactions")
-      .insert([{
+    const { data, error } = await supabase.functions.invoke("create-crm-lead-interaction", {
+      body: {
         lead_id: lead.id,
         interaction_type: interactionType,
         interaction_channel: interactionChannel,
@@ -753,43 +944,13 @@ interactionSaveButton.addEventListener("click", async () => {
         summary,
         next_action: interactionNextAction,
         next_follow_up_at: interactionNextFollowUp,
-        created_by_email: crmUser?.email || null,
-        created_by_name: crmUser?.full_name || null,
-      }])
-      .select("*")
-      .single();
+      },
+    });
+    if (error) throw error;
+    if (!data?.ok) throw new Error(data?.error || "Falha ao registrar interacao.");
 
-    if (interactionError) throw interactionError;
-
-    const resolvedFirstContactAt =
-      (lead.first_contact_at || interactionType === "nota_interna")
-        ? lead.first_contact_at || null
-        : interactionTimestamp;
-
-    const leadPatch = {
-      next_action: interactionNextAction,
-      next_follow_up_at: interactionNextFollowUp,
-      last_interaction_at: interactionTimestamp,
-      last_interaction_summary: summary,
-      first_contact_at: resolvedFirstContactAt,
-      status: lead.status === "novo" && interactionType !== "nota_interna"
-        ? "em_contato"
-        : lead.status,
-    };
-
-    const { data: updatedLead, error: leadError } = await supabase
-      .from("crm_leads_public")
-      .update(leadPatch)
-      .eq("id", lead.id)
-      .select("*")
-      .single();
-
-    if (leadError) {
-      selectedLeadInteractions = [interaction, ...selectedLeadInteractions];
-      renderInteractionHistory();
-      setFeedback(interactionFeedback, "Interacao registrada, mas o resumo do lead nao foi atualizado. Rode backend/supabase/crm_interactions_v1.sql no Supabase e atualize a pagina.", "error");
-      return;
-    }
+    const interaction = data.interaction;
+    const updatedLead = data.lead;
 
     leads = leads.map((item) => item.id === lead.id ? updatedLead : item);
     selectedLeadInteractions = [interaction, ...selectedLeadInteractions];
