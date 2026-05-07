@@ -1,3 +1,22 @@
+// =====================================================================
+// ALVO CANONICO DA UNIFICACAO (Etapa 4 do plano de consolidacao).
+//
+// Esta e a versao em desenvolvimento do motor canonico de diagnostico,
+// destinada a substituir `backend/supabase/functions/_shared/official-diagnostic.ts`
+// como fonte unica em uma proxima etapa.
+//
+// Hoje esta camada e CODIGO DORMENTE: nenhuma edge function importa daqui
+// em producao. A versao em producao continua sendo a do `_shared/`.
+//
+// Divergencias atuais conhecidas em relacao a producao:
+// - acentuacao portuguesa preservada (Agua/Água, Gestao/Gestão, etc.)
+// - travessao tipografico (—) em vez de hifen (-)
+// - estrutura modular separada em arquivos: canonical-diagnostic.ts,
+//   official-diagnostic-engine.ts, official-execution-plan.ts
+//
+// Plano de unificacao: docs/PLANO_UNIFICACAO_MOTOR_DIAGNOSTICO_V1.md
+// =====================================================================
+
 import type {
   CanonicalDiagnosisContextInput,
   CanonicalDiagnosisPayload,

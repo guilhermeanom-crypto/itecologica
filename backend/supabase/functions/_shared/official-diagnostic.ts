@@ -1,3 +1,22 @@
+// =====================================================================
+// FONTE CANONICA EM PRODUCAO (V1).
+//
+// Esta e a implementacao que esta viva no edge runtime: gera o
+// canonical_diagnosis_json, official_diagnostic_result_json e
+// official_execution_plan_json consumidos pela edge function
+// `generate-canonical-diagnosis` e exibidos na Area do Analista.
+//
+// NAO editar isoladamente. Existe uma copia espelhada em
+// `backend/domain/diagnostic/` que sera promovida a fonte canonica
+// durante a Etapa 4 do plano de consolidacao (vide
+// `docs/PLANO_UNIFICACAO_MOTOR_DIAGNOSTICO_V1.md`). As duas versoes
+// JA divergem em acentuacao e pontuacao tipografica, entao mudancas
+// aqui devem ser replicadas com cuidado em ambos os lados ate a
+// unificacao com snapshot test.
+//
+// Consumidor: backend/supabase/functions/generate-canonical-diagnosis/index.ts
+// =====================================================================
+
 export type CanonicalDiagnosisSource =
   | "analyst_area"
   | "standalone"
