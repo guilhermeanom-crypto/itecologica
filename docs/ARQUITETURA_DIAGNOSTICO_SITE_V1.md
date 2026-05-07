@@ -4,6 +4,49 @@
 
 Documento de apoio arquitetural. Serve como referencia de desenho e contexto, mas nao substitui o `MAPA`, a `ORQUESTRACAO` nem o roteiro de `PUBLICACAO`.
 
+> **Atencao - leitura mista V1 x Fase 2+.**
+> Este documento descreve tanto o que ja foi implementado na V1 quanto o desenho previsto para a Fase 2+. Antes de tomar qualquer decisao de implementacao, conferir a secao "Status de implementacao" abaixo. A fonte canonica da V1 viva continua sendo o `MAPA_SISTEMA_CENTRAL_V1`.
+
+## Status de implementacao
+
+### Implementado e em producao na V1
+
+Tabelas:
+
+- `crm_diagnosis_cases`
+- `crm_diagnosis_inputs`
+- `crm_diagnosis_documents`
+- `crm_diagnosis_runs`
+- `crm_diagnosis_run_steps`
+- `crm_diagnosis_artifacts`
+
+Edge functions:
+
+- `create-public-lead`
+- `update-crm-lead`
+- `create-crm-lead-interaction`
+- `open-diagnosis-case`
+- `prepare-diagnosis-run`
+- `save-diagnosis-briefing`
+- `ingest-diagnosis-step-output`
+- `generate-canonical-diagnosis`
+- `review-diagnosis-case`
+
+Pipeline real: `agent_01 -> agent_02 -> agent_04 -> agent_03 -> awaiting_human_review`.
+
+### Desenho planejado (Fase 2+, ainda nao implementado)
+
+As secoes adiante descrevem componentes que NAO existem na V1 atual e devem ser tratados como design futuro:
+
+- Tabela `crm_diagnosis_reports` (artefatos HTML/PDF separados de `crm_diagnosis_artifacts`)
+- Tabela `crm_diagnosis_proposals` (estrutura comercial derivada do diagnostico)
+- Edge functions `create-diagnosis-case`, `upload-diagnosis-document`, `start-diagnosis-run`, `run-diagnosis-pipeline`, `generate-diagnosis-report`, `generate-diagnosis-proposal`
+- Buckets de storage `diagnosis-inputs`, `diagnosis-reports`, `diagnosis-proposals`
+- Templates por tipo de diagnostico (regularizacao, mapeamento, PGRSS, estanqueidade, logistica reversa, posto, gestao)
+- Geracao de relatorio HTML/PDF e proposta comercial automatizada
+
+A V1 atual consolida o resultado em `crm_diagnosis_artifacts` (3 JSONs canonicos: `canonical_diagnosis_json`, `official_diagnostic_result_json`, `official_execution_plan_json`) e a edge function ativa para isso e a `generate-canonical-diagnosis`. Quando a Fase 2+ for aberta, o desenho deste documento entra como base.
+
 ## Objetivo
 
 Trazer o motor de diagnostico ja existente em `HABILIS_AI` para dentro do ambiente publicado da Itecologica, sem reescrever a metodologia e sem acoplar tudo ao frontend estatico.
@@ -255,14 +298,15 @@ Campos:
 - `model_name`
 - `created_by_email`
 
-Status:
+Status (alinhado ao schema real em `backend/supabase/diagnosis_v1.sql`):
 
 - `queued`
 - `running_agent_01`
 - `running_agent_02`
 - `running_agent_04`
 - `running_agent_03`
-- `consolidating`
+- `awaiting_outputs`
+- `awaiting_human_review`
 - `completed`
 - `failed`
 - `cancelled`

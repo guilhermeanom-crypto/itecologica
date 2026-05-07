@@ -159,6 +159,21 @@ Status:
 - nao participa da operacao oficial desta etapa
 - nao deve receber prioridade antes da homologacao do fluxo vivo
 
+### Documentacao historica
+
+- [docs/archive/](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/docs/archive/)
+
+Conteudo:
+
+- escopo inicial da Etapa 1 (captacao publica + endpoint seguro)
+- implantacao original do CRM em cima de `crm_leads_public`
+
+Status:
+
+- contexto de origem do sistema, util como rastro de decisao
+- nao orienta operacao atual
+- nao deve ser editado como guia vivo
+
 ---
 
 ## Fluxo canonico do sistema central

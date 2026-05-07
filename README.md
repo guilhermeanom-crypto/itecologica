@@ -25,7 +25,11 @@ Se a duvida for operacional, arquitetural ou de publicacao, os documentos centra
 
 ## Documentacao de apoio e historico
 
-Os demais arquivos em `docs/` devem ser lidos como apoio complementar, historico de etapa ou trilha futura, nao como fonte principal de operacao.
+Os demais arquivos em `docs/` devem ser lidos como apoio complementar ou trilha futura, nao como fonte principal de operacao.
+
+A documentacao puramente historica vive em [docs/archive/](/home/guilherme/Projetos%20VS%20CODE/ITECOLOGICA/docs/archive/) (escopo inicial e implantacao original do CRM). Esses documentos servem como contexto de origem, nao como guia operacional.
+
+A `docs/ARQUITETURA_DIAGNOSTICO_SITE_V1.md` mistura desenho V1 (implementado) com Fase 2+ (planejada). A propria abertura do documento separa o que ja existe do que ainda nao foi implementado.
 
 Resumo pratico:
 
